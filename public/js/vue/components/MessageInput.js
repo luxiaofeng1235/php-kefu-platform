@@ -30,7 +30,7 @@ window.MessageInput = {
             default: () => []
         }
     },
-    emits: ['update:modelValue', 'send'],
+    emits: ['update:modelValue', 'send', 'typing'],
     template: `
         <div class="message-input-container">
             <!-- 快捷回复（仅客服端） -->
@@ -57,7 +57,7 @@ window.MessageInput = {
             <div class="input-row">
                 <el-input
                     :model-value="modelValue"
-                    @update:model-value="$emit('update:modelValue', $event)"
+                    @update:model-value="handleModelUpdate"
                     type="textarea"
                     :rows="3"
                     placeholder="输入消息内容，Enter 发送，Shift+Enter 换行"
@@ -110,7 +110,7 @@ window.MessageInput = {
         </div>
     `,
     setup(props, { emit }) {
-        const { ref, computed, onMounted, onUnmounted } = Vue;
+        const { ref, computed, watch, onMounted, onUnmounted } = Vue;
         const { ElMessage } = ElementPlus;
 
         const sending = ref(false);
@@ -146,6 +146,69 @@ window.MessageInput = {
             return `✅ 正在与访客 ${props.currentVisitorToken} 对话`;
         });
 
+        const TYPING_IDLE_MS = 1600;
+        const TYPING_REFRESH_MS = 2500;
+        let typingIdleTimer = null;
+        let typingRefreshTimer = null;
+        let activeTypingToken = '';
+
+        const emitTypingStatus = (visitorToken, status) => {
+            if (visitorToken) {
+                emit('typing', { visitor_token: visitorToken, status });
+            }
+        };
+
+        const stopTyping = () => {
+            if (typingIdleTimer) clearTimeout(typingIdleTimer);
+            if (typingRefreshTimer) clearInterval(typingRefreshTimer);
+            typingIdleTimer = null;
+            typingRefreshTimer = null;
+
+            if (activeTypingToken) {
+                emitTypingStatus(activeTypingToken, false);
+                activeTypingToken = '';
+            }
+        };
+
+        const handleModelUpdate = (value) => {
+            emit('update:modelValue', value);
+
+            if (props.identity?.role !== 'admin' || !canSend.value || !String(value || '').trim()) {
+                stopTyping();
+                return;
+            }
+
+            const visitorToken = props.currentVisitorToken;
+            if (activeTypingToken && activeTypingToken !== visitorToken) {
+                stopTyping();
+            }
+
+            if (!activeTypingToken) {
+                activeTypingToken = visitorToken;
+                emitTypingStatus(activeTypingToken, true);
+                typingRefreshTimer = setInterval(() => {
+                    if (activeTypingToken === visitorToken && canSend.value && props.currentVisitorToken === visitorToken) {
+                        emitTypingStatus(visitorToken, true);
+                    } else {
+                        stopTyping();
+                    }
+                }, TYPING_REFRESH_MS);
+            }
+
+            if (typingIdleTimer) clearTimeout(typingIdleTimer);
+            typingIdleTimer = setTimeout(stopTyping, TYPING_IDLE_MS);
+        };
+
+        watch(() => props.currentVisitorToken, (visitorToken) => {
+            if (activeTypingToken && activeTypingToken !== visitorToken) {
+                stopTyping();
+            }
+        });
+
+        watch(canSend, (allowed) => {
+            if (!allowed) stopTyping();
+        });
+
         // ===== 构造发送内容（支持 AI 消息格式） =====
         const buildMessageContent = (rawContent) => {
             // 如果选择了 AI 角色，包装成 AI 消息格式
@@ -166,6 +229,7 @@ window.MessageInput = {
 
             if (sending.value) return;
 
+            stopTyping();
             sending.value = true;
 
             try {
@@ -235,6 +299,7 @@ window.MessageInput = {
         // 组件卸载时移除监听
         onUnmounted(() => {
             window.removeEventListener('keydown', handleKeyDown);
+            stopTyping();
         });
 
         return {
@@ -243,6 +308,7 @@ window.MessageInput = {
             sendHint,
             selectedQuickReply,
             aiRoleSelect,
+            handleModelUpdate,
             handleSend,
             handleQuickReply
         };

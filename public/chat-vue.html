@@ -43,6 +43,10 @@
 
             <!-- 中间：消息面板 -->
             <div class="message-panel-wrapper">
+                <div v-if="identity?.role === 'visitor' && store.isAgentTyping" class="typing-indicator" role="status">
+                    客服正在输入...
+                </div>
+
                 <message-panel
                         :messages="currentMessages"
                         :identity="identity"
@@ -63,6 +67,7 @@
                             :target-admin-id="targetAdminId"
                             :quick-replies="quickReplies"
                             @send="handleSendMessage"
+                            @typing="store.sendTypingStatus($event.visitor_token, $event.status)"
                     ></message-input>
                 </div>
             </div>

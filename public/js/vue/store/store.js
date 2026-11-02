@@ -11,6 +11,7 @@
     // 辅助去重缓存
     const selfMessageCache = new Map();
     const msgIdCache = new Map();
+    let agentTypingTimer = null;
 
     // 创建 Reactive Store
     const store = Vue.reactive({
@@ -27,6 +28,7 @@
         servedVisitors: [],
         currentVisitor: null,
         visitorListLoading: false,
+        isAgentTyping: false,
         
         offlineMessages: Storage.loadOfflineMessages(),
         conversations: Storage.loadChat(),
@@ -77,6 +79,7 @@
             Socket.on('close', () => {
                 this.isConnected = false;
                 this.visitorListLoading = false;
+                this.clearAgentTyping();
             });
 
             Socket.on('error', (e) => {
@@ -138,6 +141,10 @@
                 
                 case 'visitor_page_view':
                     this.handlePageView(data);
+                    break;
+
+                case 'typing':
+                    this.updateAgentTyping(data);
                     break;
 
                 case 'chat':
@@ -360,6 +367,43 @@
                  Storage.saveOfflineMessages(this.offlineMessages);
                  this.addMessage(localMsg);
              }
+        },
+
+        sendTypingStatus(visitorToken, status) {
+            if (this.identity?.role !== 'admin' || !visitorToken || typeof status !== 'boolean') {
+                return false;
+            }
+
+            if (status && !this.servedVisitors.some(visitor => visitor.token === visitorToken)) {
+                return false;
+            }
+
+            return Socket.send({
+                type: 'typing',
+                visitor_token: visitorToken,
+                status
+            });
+        },
+
+        updateAgentTyping(data) {
+            if (this.identity?.role !== 'visitor' || data.visitor_token !== this.identity.token || typeof data.status !== 'boolean') {
+                return;
+            }
+
+            this.clearAgentTyping();
+            this.isAgentTyping = data.status;
+            if (data.status) {
+                agentTypingTimer = setTimeout(() => {
+                    this.isAgentTyping = false;
+                    agentTypingTimer = null;
+                }, 5000);
+            }
+        },
+
+        clearAgentTyping() {
+            if (agentTypingTimer) clearTimeout(agentTypingTimer);
+            agentTypingTimer = null;
+            this.isAgentTyping = false;
         },
 
         async resendOfflineMessages() {

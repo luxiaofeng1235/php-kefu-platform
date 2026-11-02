@@ -171,6 +171,12 @@ class GatewayChatServer
             self::handleReleaseVisitor($clientId, $data);
             return;
         }
+
+        if ($data['type'] === 'typing') {
+            self::handleTyping($clientId, $data);
+            return;
+        }
+
         //判断是否可以对AI的消息进行介入，防止AI继续回复，用这个来切断
         if ($data['type'] === 'ai_status') {
             // 查询访客是否由AI服务（未被人工接入）
@@ -1136,6 +1142,47 @@ class GatewayChatServer
             'success' => $result['success'],
             'error' => $result['error'] ?? null,
             'data' => $result['data'] ?? [],
+        ], JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * @notes 将客服输入状态定向发送给已接入的在线访客
+     * @param string $clientId 客服连接ID
+     * @param array<string, mixed> $data 输入状态数据
+     * @date 2026/11/2
+     * @return void
+     */
+    private static function handleTyping(string $clientId, array $data): void
+    {
+        $session = Gateway::getSession($clientId);
+        if (!is_array($session) || ($session['role'] ?? '') !== 'admin') {
+            return;
+        }
+
+        $adminId = (int)($session['admin_id'] ?? 0);
+        $visitorToken = trim((string)($data['visitor_token'] ?? ''));
+        $status = $data['status'] ?? null;
+        if ($adminId <= 0 || $visitorToken === '' || !is_bool($status)) {
+            return;
+        }
+
+        $isActiveVisitor = WsVisitorSession::where('visitor_token', $visitorToken)
+            ->where('served_by_admin', $adminId)
+            ->where('is_online', 1)
+            ->exists();
+        if (!$isActiveVisitor) {
+            return;
+        }
+
+        $visitorUid = self::buildVisitorUid($visitorToken);
+        if (empty(Gateway::getClientIdByUid($visitorUid))) {
+            return;
+        }
+
+        Gateway::sendToUid($visitorUid, json_encode([
+            'type' => 'typing',
+            'visitor_token' => $visitorToken,
+            'status' => $status,
         ], JSON_UNESCAPED_UNICODE));
     }
 

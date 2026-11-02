@@ -88,6 +88,7 @@ window.MessagePanel = {
                     :identity="identity"
                 ></message-item>
             </div>
+
         </div>
     `,
     setup(props, {emit}) {
