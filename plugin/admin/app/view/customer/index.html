@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <title>客服中心</title>
+    <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css" />
+    <style>
+        .chat-entry-container {
+            text-align: center;
+            padding: 100px 0;
+        }
+        .chat-entry-btn {
+            padding: 20px 60px;
+            font-size: 18px;
+            height: auto;
+            line-height: 1.5;
+        }
+        .chat-entry-btn i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        .chat-entry-tips {
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="pear-container">
+    <div class="layui-card">
+        <div class="layui-card-header">客服管理中心</div>
+        <div class="layui-card-body chat-entry-container">
+            <button id="openChatBtn" class="pear-btn pear-btn-primary pear-btn-lg chat-entry-btn">
+                <i class="layui-icon layui-icon-service"></i>
+                进入客服中心
+            </button>
+            <p class="chat-entry-tips">
+                点击按钮后将在新窗口打开客服聊天界面
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const openChatBtn = document.getElementById('openChatBtn');
+
+            openChatBtn.addEventListener('click', () => {
+                // 直接跳转到安全的控制器路由
+                // 控制器会自动验证权限、生成 token、并跳转到客服界面
+                window.open('/app/admin/customer/chat', '_blank');
+            });
+        });
+    </script>
+</body>
+</html>

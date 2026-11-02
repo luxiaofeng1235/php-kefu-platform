@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试绿色闪烁效果</title>
+    <link rel="stylesheet" href="/css/chat.css">
+    <style>
+        body {
+            padding: 50px;
+            font-family: Arial, sans-serif;
+        }
+        .test-container {
+            max-width: 400px;
+        }
+        .visitor-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 测试绿色闪烁效果</h1>
+
+    <div class="test-container">
+        <div class="visitor-btn" id="testBtn">
+            <strong>测试访客按钮</strong><br>
+            <small>IP: 127.0.0.1 - 第1次访问</small><br>
+            <small>停留0秒 - 上线：刚刚</small>
+        </div>
+
+        <button onclick="testGreenFlash()">🟢 触发绿色闪烁</button>
+        <button onclick="testRedWarning()">🔴 触发红色警告</button>
+        <button onclick="resetStyle()">🔄 重置样式</button>
+
+        <div class="info">
+            <h3>测试说明：</h3>
+            <ul>
+                <li><strong>绿色闪烁</strong>：浅绿色 ↔ 中绿色，持续 5 秒</li>
+                <li><strong>红色警告</strong>：红色背景持续闪烁，带 ⚠️ 图标</li>
+                <li>如果看到的是蓝色，说明 CSS 文件未正确加载</li>
+            </ul>
+            <p id="status">当前状态：正常</p>
+        </div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('testBtn');
+        const status = document.getElementById('status');
+
+        function testGreenFlash() {
+            // 移除所有样式
+            btn.classList.remove('new-message-flashing', 'warning', 'ai-flashing');
+
+            // 强制重绘
+            void btn.offsetWidth;
+
+            // 添加绿色闪烁
+            btn.classList.add('new-message-flashing');
+            status.textContent = '当前状态：绿色闪烁（5秒）';
+            status.style.color = '#2e7d32';
+
+            setTimeout(() => {
+                btn.classList.remove('new-message-flashing');
+                status.textContent = '当前状态：正常';
+                status.style.color = 'black';
+            }, 5000);
+        }
+
+        function testRedWarning() {
+            // 移除所有样式
+            btn.classList.remove('new-message-flashing', 'warning', 'ai-flashing');
+
+            // 强制重绘
+            void btn.offsetWidth;
+
+            // 添加红色警告
+            btn.classList.add('warning');
+            status.textContent = '当前状态：红色警告（持续）';
+            status.style.color = '#ef5350';
+        }
+
+        function resetStyle() {
+            btn.classList.remove('new-message-flashing', 'warning', 'ai-flashing');
+            status.textContent = '当前状态：正常';
+            status.style.color = 'black';
+        }
+
+        // 检查 CSS 是否加载
+        window.addEventListener('load', () => {
+            const style = getComputedStyle(btn);
+            console.log('按钮样式:', style);
+
+            // 检查 animation 是否定义
+            setTimeout(() => {
+                btn.classList.add('new-message-flashing');
+                const animStyle = getComputedStyle(btn);
+                console.log('动画样式:', animStyle.animation);
+                console.log('背景色:', animStyle.backgroundColor);
+                console.log('边框:', animStyle.border);
+                btn.classList.remove('new-message-flashing');
+            }, 100);
+        });
+    </script>
+</body>
+</html>

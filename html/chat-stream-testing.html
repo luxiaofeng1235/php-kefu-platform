@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Stream Test (Text & Audio)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+        .chat-output {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-bottom: 1px solid #eee;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        .chat-output p {
+            margin: 0;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            margin-right: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        #message-input:focus {
+            border-color: #007bff;
+        }
+        #send-button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        #send-button:disabled {
+            background-color: #a0c7e4;
+            cursor: not-allowed;
+        }
+        .blinking-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background-color: #333;
+            animation: blink 1s step-end infinite;
+            vertical-align: bottom;
+        }
+        @keyframes blink {
+            from, to { background-color: transparent }
+            50% { background-color: #333; }
+        }
+        .status-indicator {
+            padding: 5px 20px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-output" id="chat-output">
+        <p><strong>AI Assistant:</strong> Hello! How can I help you today?</p>
+    </div>
+    <div class="status-indicator" id="status-indicator"></div>
+    <div class="chat-input-area">
+        <input type="text" id="message-input" placeholder="Type your message...">
+        <button id="send-button">Send</button>
+    </div>
+</div>
+
+<script>
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const chatOutput = document.getElementById('chat-output');
+    const statusIndicator = document.getElementById('status-indicator');
+    
+    let eventSource = null;
+    let audioChunks = [];
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    function addMessage(sender, message, isStreaming = false) {
+        const messageElement = document.createElement('p');
+        messageElement.innerHTML = `<strong>${sender}:</strong> `;
+        
+        const contentSpan = document.createElement('span');
+        messageElement.appendChild(contentSpan);
+
+        chatOutput.appendChild(messageElement);
+        
+        if (isStreaming) {
+            const cursor = document.createElement('span');
+            cursor.className = 'blinking-cursor';
+            messageElement.appendChild(cursor);
+            return { contentSpan, cursor };
+        } else {
+            contentSpan.textContent = message;
+        }
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+    }
+
+    // Helper to write strings into a DataView
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+
+    // Creates a WAV file header and combines it with the raw PCM data
+    function createWavFile(pcmData) {
+        const sampleRate = 24000; // Common for Qwen TTS
+        const numChannels = 1;
+        const bitsPerSample = 16;
+        const dataSize = pcmData.length;
+        const blockAlign = (numChannels * bitsPerSample) / 8;
+        const byteRate = sampleRate * blockAlign;
+
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+
+        // RIFF chunk descriptor
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeString(view, 8, 'WAVE');
+
+        // "fmt " sub-chunk
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true); // Subchunk1Size for PCM
+        view.setUint16(20, 1, true);  // AudioFormat (1 for PCM)
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true);
+
+        // "data" sub-chunk
+        writeString(view, 36, 'data');
+        view.setUint32(40, dataSize, true);
+
+        // Write PCM data after the header
+        new Uint8Array(buffer, 44).set(pcmData);
+
+        return buffer;
+    }
+
+    async function playAudio() {
+        if (audioChunks.length === 0) {
+            statusIndicator.textContent = 'Text-only response.';
+            return;
+        }
+        statusIndicator.textContent = 'Assembling audio...';
+
+        try {
+            const fullBase64 = audioChunks.join('');
+            const byteCharacters = atob(fullBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const pcmData = new Uint8Array(byteNumbers);
+
+            // Create a full WAV file in memory
+            const wavBuffer = createWavFile(pcmData);
+
+            statusIndicator.textContent = 'Decoding audio...';
+            audioContext.decodeAudioData(wavBuffer, function(buffer) {
+                statusIndicator.textContent = 'Playing audio...';
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioContext.destination);
+                source.start(0);
+                source.onended = () => {
+                    statusIndicator.textContent = 'Playback finished.';
+                };
+            }, function(e) {
+                console.error("Error decoding audio data", e);
+                statusIndicator.textContent = 'Error decoding audio.';
+            });
+        } catch (e) {
+            console.error("Error processing audio chunks", e);
+            statusIndicator.textContent = 'Error processing audio.';
+        } finally {
+            audioChunks = []; // Reset for the next message
+        }
+    }
+
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        addMessage('You', message);
+        messageInput.value = '';
+        sendButton.disabled = true;
+        statusIndicator.textContent = 'AI is thinking...';
+
+        const { contentSpan, cursor } = addMessage('AI Assistant', '', true);
+
+        if (eventSource) {
+            eventSource.close();
+        }
+        audioChunks = [];
+
+        eventSource = new EventSource(`http://127.0.0.1:8585/api/chat/stream?message=${encodeURIComponent(message)}`);
+
+        eventSource.onmessage = function(event) {
+            if (!event.data) return;
+
+            if (event.data === '[DONE]') {
+                eventSource.close();
+                cursor.remove();
+                sendButton.disabled = false;
+                messageInput.focus();
+                playAudio();
+                return;
+            }
+
+            try {
+                const jsonData = JSON.parse(event.data);
+                
+                if (jsonData.choices && jsonData.choices.length > 0 && jsonData.choices[0].delta) {
+                    if (jsonData.choices[0].delta.content) {
+                        statusIndicator.textContent = 'Receiving response...';
+                        contentSpan.textContent += jsonData.choices[0].delta.content;
+                        chatOutput.scrollTop = chatOutput.scrollHeight;
+                    }
+                    if (jsonData.choices[0].delta.audio && jsonData.choices[0].delta.audio.data) {
+                        audioChunks.push(jsonData.choices[0].delta.audio.data);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error parsing JSON chunk:', error, 'Chunk:', event.data);
+                eventSource.close();
+                cursor.textContent = ' [Error]';
+                sendButton.disabled = false;
+                statusIndicator.textContent = 'An error occurred.';
+            }
+        };
+
+        eventSource.onerror = function(error) {
+            console.error('EventSource failed:', error);
+            addMessage('System', 'Error connecting to the server. Please check the console.');
+            if(cursor) cursor.remove();
+            eventSource.close();
+            sendButton.disabled = false;
+            statusIndicator.textContent = 'Connection failed.';
+        };
+    }
+
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "webman-admin",
+  "version": "1.0.0",
+  "description": "开发的超高性能PHP框架",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://codeup.aliyun.com/640a799eb9581d62e8f7cff7/webman-admin.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

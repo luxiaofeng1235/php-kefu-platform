@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title id="pageTitle">客服在线沟通面板</title>
+
+    <!-- Element Plus 样式 -->
+    <link rel="stylesheet" href="/lib/element-plus/index.css">
+
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="/css/chat.css">
+    <link rel="stylesheet" href="/css/chat-served-list.css">
+    <link rel="stylesheet" href="/css/chat-vue.css">
+</head>
+<body>
+<div id="app" v-cloak>
+    <div class="panel-container">
+        <!-- 头部状态栏 -->
+        <chat-header
+                :status="connectionStatus"
+                :client-id="clientId"
+                :identity="identity"
+                :ws-url="wsUrl"
+        ></chat-header>
+
+        <!-- 主内容区 -->
+        <div class="main-container">
+            <!-- 左侧：访客列表（仅客服端） -->
+            <visitor-sidebar
+                    v-if="identity?.role === 'admin'"
+                    :visitors="visitorItems"
+                    :current-token="currentVisitorToken"
+                    :filter-online-only="filterOnlineOnly"
+                    :filter-today-only="filterTodayOnly"
+                    :loading="visitorListLoading"
+                    :warning-threshold="visitorWarningThreshold"
+                    :identity="identity"
+                    @select="handleSelectVisitor"
+                    @toggle-filter="filterOnlineOnly = $event"
+                    @toggle-filter-today="filterTodayOnly = $event"
+            ></visitor-sidebar>
+
+            <!-- 中间：消息面板 -->
+            <div class="message-panel-wrapper">
+                <message-panel
+                        :messages="currentMessages"
+                        :identity="identity"
+                        :current-visitor-token="currentVisitorToken"
+                        :loading="messageLoading"
+                        :has-more-messages="hasMoreMessages"
+                        :total-message-count="totalMessageCount"
+                        @load-more="handleLoadMoreMessages"
+                ></message-panel>
+
+                <!-- 输入框 -->
+                <div class="message-input-wrapper">
+                    <message-input
+                            v-model="inputMessage"
+                            :identity="identity"
+                            :current-visitor-token="currentVisitorToken"
+                            :served-tokens="servedVisitorTokens"
+                            :target-admin-id="targetAdminId"
+                            :quick-replies="quickReplies"
+                            @send="handleSendMessage"
+                    ></message-input>
+                </div>
+            </div>
+
+            <!-- 右侧：已接入列表（仅客服端且有接入访客时显示） -->
+            <served-sidebar
+                    v-if="identity?.role === 'admin' && servedVisitors.length > 0"
+                    :visitors="servedVisitors"
+                    :current-token="currentVisitorToken"
+                    @select="handleSelectVisitor"
+                    @hangup="handleHangup"
+            ></served-sidebar>
+        </div>
+
+        <!-- 客服操作栏（仅客服端） -->
+        <admin-actions
+                v-if="identity?.role === 'admin'"
+                :hold-state="holdState"
+                :current-token="currentVisitorToken"
+                :pending="holdActionPending"
+                :visitors="visitorItems"
+                :served-visitors="servedVisitors"
+                @connect="handleConnect"
+                @release="handleRelease"
+        ></admin-actions>
+    </div>
+</div>
+
+<!-- CDN 引入（本地资源） -->
+<!-- Vue 3 -->
+<script src="/lib/vue/vue.global.js"></script>
+
+<!-- Element Plus -->
+<script src="/lib/element-plus/index.full.js"></script>
+<script src="/lib/element-plus/zh-cn.js"></script>
+
+<!-- ✨✨✨ 新版 Vue 核心库 (替代旧版 JS) ✨✨✨ -->
+<script src="/js/vue/utils/api-config.js"></script>
+<script src="/js/vue/utils/tools.js"></script>
+<script src="/js/vue/utils/notification.js"></script>
+
+<script src="/js/vue/store/storage.js"></script>
+<script src="/js/vue/store/api.js"></script>
+<script src="/js/vue/store/socket.js"></script>
+<script src="/js/vue/store/handler.js"></script>
+<script src="/js/vue/store/store.js"></script>
+
+<!-- Vue 组件（按模块拆分 - 注意：子组件必须先于父组件加载） -->
+<script src="/js/vue/components/ChatHeader.js"></script>
+<script src="/js/vue/components/VisitorCard.js"></script>
+<script src="/js/vue/components/VisitorSidebar.js"></script>
+<script src="/js/vue/components/MessageItem.js"></script>
+<script src="/js/vue/components/MessagePanel.js"></script>
+<script src="/js/vue/components/MessageInput.js"></script>
+<script src="/js/vue/components/ServedCard.js"></script>
+<script src="/js/vue/components/ServedSidebar.js"></script>
+<script src="/js/vue/components/AdminActions.js"></script>
+
+<!-- 主应用 -->
+<script src="/js/vue/app.js"></script>
+</body>
+</html>

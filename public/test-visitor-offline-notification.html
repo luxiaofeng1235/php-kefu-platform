@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>访客上下线通知测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #409EFF;
+            border-bottom: 2px solid #409EFF;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #303133;
+            margin-top: 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #409EFF;
+            color: white;
+        }
+        .btn-success {
+            background: #67C23A;
+            color: white;
+        }
+        .btn-warning {
+            background: #E6A23C;
+            color: white;
+        }
+        .btn-danger {
+            background: #F56C6C;
+            color: white;
+        }
+        .btn-info {
+            background: #909399;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.8;
+        }
+        .code-block {
+            background: #f4f4f5;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .status.online {
+            background: #f0f9ff;
+            color: #67C23A;
+            border: 1px solid #67C23A;
+        }
+        .status.offline {
+            background: #fef0f0;
+            color: #F56C6C;
+            border: 1px solid #F56C6C;
+        }
+        .instructions {
+            background: #ecf5ff;
+            border-left: 4px solid #409EFF;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #409EFF;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 访客上下线通知功能测试</h1>
+
+    <div class="test-section">
+        <h2>📋 测试说明</h2>
+        <div class="instructions">
+            <h3>测试步骤:</h3>
+            <ol>
+                <li><strong>打开客服端页面</strong> (在新标签页)
+                    <div class="code-block">http://127.0.0.1:8787/chat-vue.html?role=admin&admin_id=1&token=你的token</div>
+                </li>
+                <li><strong>打开访客端页面</strong> (在新标签页)
+                    <div class="code-block">http://127.0.0.1:8787/chat-vue.html?role=visitor&token=test_offline_001</div>
+                </li>
+                <li><strong>访客发送一条消息</strong> (让客服看到访客)</li>
+                <li><strong>客服接入访客</strong></li>
+                <li><strong>关闭访客端页面</strong> (模拟下线)</li>
+                <li><strong>观察客服端通知</strong></li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 预期效果</h2>
+        <h3>当访客下线时,客服端应该:</h3>
+        <ul>
+            <li>✅ 右下角弹出 <strong>ElNotification</strong> 通知</li>
+            <li>✅ 播放 <strong>低音提示音</strong> (400Hz)</li>
+            <li>✅ Console 输出: <code>🔴 访客离线: xxx</code></li>
+            <li>✅ 如果是当前对话访客,显示 <strong>ElMessage 警告</strong></li>
+            <li>✅ 访客卡片变灰 (已有样式)</li>
+        </ul>
+
+        <h3>当访客上线时,客服端应该:</h3>
+        <ul>
+            <li>✅ 右下角弹出 <strong>ElNotification</strong> 通知 (绿色)</li>
+            <li>✅ 播放 <strong>提示音</strong> (800Hz)</li>
+            <li>✅ Console 输出: <code>🟢 访客上线: xxx</code></li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🎨 通知样式预览</h2>
+        <h3>访客下线通知 (未接入访客):</h3>
+        <div class="code-block">
+标题: 🔴 访客离线
+内容: test_...001 于 14:30:25 离线
+类型: info
+位置: 右下角
+自动关闭: 4秒
+        </div>
+
+        <h3>访客下线通知 (已接入访客):</h3>
+        <div class="code-block">
+标题: ⚠️ 已接入访客离线
+内容: test_...001 于 14:30:25 离线
+类型: warning
+位置: 右下角
+自动关闭: 不自动关闭 (需手动关闭)
+        </div>
+
+        <h3>访客上线通知:</h3>
+        <div class="code-block">
+标题: 🟢 新访客上线 / 🟢 访客重新上线
+内容: test_...001 于 14:30:30 上线
+类型: success
+位置: 右下角
+自动关闭: 3秒
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔊 提示音对比</h2>
+        <button class="btn btn-success" onclick="playOnlineSound()">
+            播放上线提示音 (800Hz)
+        </button>
+        <button class="btn btn-warning" onclick="playOfflineSound()">
+            播放下线提示音 (400Hz)
+        </button>
+    </div>
+
+    <div class="test-section">
+        <h2>🐛 调试信息</h2>
+        <h3>在客服端 Console 执行以下命令:</h3>
+
+        <h4>1. 查看当前访客列表</h4>
+        <div class="code-block">VueApp.Store.visitors</div>
+
+        <h4>2. 手动触发下线通知 (测试)</h4>
+        <div class="code-block">
+// 假设第一个访客下线
+const visitor = VueApp.Store.visitors[0];
+if (visitor) {
+    VueApp.Store.handleVisitorOffline(visitor, false);
+}
+        </div>
+
+        <h4>3. 手动触发上线通知 (测试)</h4>
+        <div class="code-block">
+// 假设第一个访客上线
+const visitor = VueApp.Store.visitors[0];
+if (visitor) {
+    VueApp.Store.handleVisitorOnline(visitor, true);
+}
+        </div>
+
+        <h4>4. 测试已接入访客下线</h4>
+        <div class="code-block">
+// 假设已接入的访客下线
+const servedVisitor = VueApp.Store.servedVisitors[0];
+if (servedVisitor) {
+    VueApp.Store.handleVisitorOffline(servedVisitor, true);
+}
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ 检查清单</h2>
+        <ul>
+            <li><input type="checkbox"> 访客下线时,右下角弹出通知</li>
+            <li><input type="checkbox"> 播放下线提示音 (低音)</li>
+            <li><input type="checkbox"> Console 输出 "🔴 访客离线"</li>
+            <li><input type="checkbox"> 当前对话访客下线时,显示警告消息</li>
+            <li><input type="checkbox"> 访客上线时,右下角弹出通知</li>
+            <li><input type="checkbox"> 播放上线提示音 (高音)</li>
+            <li><input type="checkbox"> Console 输出 "🟢 访客上线"</li>
+            <li><input type="checkbox"> 已接入访客下线通知不自动关闭</li>
+            <li><input type="checkbox"> 未接入访客下线通知 4 秒后自动关闭</li>
+        </ul>
+    </div>
+
+    <script>
+        // 播放上线提示音
+        function playOnlineSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 800; // 高音
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.2);
+            } catch(e) {
+                alert('播放失败: ' + e.message);
+            }
+        }
+
+        // 播放下线提示音
+        function playOfflineSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 400; // 低音
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch(e) {
+                alert('播放失败: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

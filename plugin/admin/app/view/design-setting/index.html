@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>首页配置</title>
+    <link rel="stylesheet" href="/app/admin/component/layui/css/layui.css?v=2.8.12"/>
+    <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css"/>
+    <link rel="stylesheet" href="/app/admin/admin/css/reset.css"/>
+</head>
+<body class="pear-container">
+<style>
+    .layui-form-label {
+        width: 120px;
+    }
+
+    .layui-input-block {
+        margin-left: 150px;
+        max-width: 420px;
+    }
+
+    .layui-input-block input {
+        width: 600px;
+    }
+</style>
+
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" lay-filter="designSettingForm">
+            <input type="hidden" name="id" value="">
+
+            <div class="layui-form-item">
+                <label class="layui-form-label required">3D 地址</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url" lay-verify="required|url" placeholder="请输入 URL 地址"
+                           autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label required">3D 动作</label>
+                <div class="layui-input-block">
+                    <input type="text" name="action" lay-verify="required" placeholder="请输入设置的首页动作"
+                           autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">活动报名地址</label>
+                <div class="layui-input-block">
+                    <input type="text" name="activity_url" placeholder="请输入活动地址"
+                           autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">活动视频URL</label>
+                <div class="layui-input-block">
+                    <input type="text" name="activity_video_url" placeholder="请输入活动视频地址"
+                           autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="submit" class="pear-btn pear-btn-primary pear-btn-md" lay-submit
+                            lay-filter="saveSetting">
+                        保存
+                    </button>
+                    <button type="button" class="pear-btn pear-btn-md" id="reset-setting">
+                        重置
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
+<script src="/app/admin/component/pear/pear.js"></script>
+<script src="/app/admin/admin/js/permission.js"></script>
+
+<script>
+    const INFO_API = "/app/admin/design-setting/info";
+    const INSERT_API = "/app/admin/design-setting/insert";
+    const UPDATE_API = "/app/admin/design-setting/update";
+
+    layui.use(["form", "popup", "jquery", "layer"], function () {
+        const form = layui.form;
+        const $ = layui.$;
+        const popup = layui.popup;
+        const layer = layui.layer;
+        let currentId = null;
+        let loadedRecord = null;
+
+        function assignForm(data, updateSnapshot = true) {
+            const values = data ? {...data} : {id: "", url: "", action: ""};
+            currentId = values.id ? Number(values.id) : null;
+            if (updateSnapshot) {
+                loadedRecord = values.id ? {...values} : null;
+            }
+            form.val("designSettingForm", {
+                id: values.id || "",
+                url: values.url || "",
+                action: values.action || "",
+                activity_url: values.activity_url || "",
+                activity_video_url: values.activity_video_url || "",
+            });
+        }
+
+        function loadData() {
+            $.ajax({
+                url: INFO_API,
+                dataType: "json",
+                success(res) {
+                    if (res.code) {
+                        return popup.failure(res.msg || "加载失败");
+                    }
+                    const record = res.data && Object.keys(res.data).length ? res.data : null;
+                    assignForm(record, true);
+                },
+                error() {
+                    popup.failure("请求失败，请稍后重试");
+                }
+            });
+        }
+
+        $("#reset-setting").on("click", function () {
+            assignForm(loadedRecord, false);
+        });
+
+        form.verify({
+            url: [/(^#)|(^http(s*):\/\/[^\s]+\.[^\s]+)/, "链接格式不正确"]
+        });
+
+        form.on("submit(saveSetting)", function (data) {
+            const submitData = {...data.field};
+            const loading = layer.load();
+            let requestUrl = INSERT_API;
+
+            if (currentId) {
+                submitData.id = currentId;
+                requestUrl = UPDATE_API;
+            } else {
+                delete submitData.id;
+            }
+
+            $.ajax({
+                url: requestUrl,
+                type: "POST",
+                dataType: "json",
+                data: submitData,
+                success(res) {
+                    layer.close(loading);
+                    if (res.code) {
+                        return popup.failure(res.msg || "操作失败");
+                    }
+                    popup.success("保存成功");
+                    if (!currentId && res.data && res.data.id) {
+                        currentId = Number(res.data.id);
+                    }
+                    loadData();
+                },
+                error() {
+                    layer.close(loading);
+                    popup.failure("请求失败，请稍后重试");
+                }
+            });
+            return false;
+        });
+
+        loadData();
+    });
+</script>
+</body>
+</html>

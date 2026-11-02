@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 商业运营系统 | 流量变现</title>
+    <!-- Tailwind CSS (官方 Play CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome (国内镜像) -->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (国内镜像) -->
+    <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#050505',
+                            card: '#121212',
+                            surface: '#1E1E1E',
+                            primary: '#F59E0B', /* Amber */
+                            accent: '#FCD34D',
+                            success: '#10B981',
+                            danger: '#EF4444',
+                            border: 'rgba(255,255,255,0.08)'
+                        }
+                    },
+                    fontFamily: {sans: ['"Noto Sans SC"', 'sans-serif']},
+                    boxShadow: {
+                        'glow': '0 0 25px rgba(245, 158, 11, 0.15)',
+                        'card-glow': '0 8px 32px rgba(0, 0, 0, 0.4)',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scan': 'scan 3s linear infinite',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'grow-up': 'growUp 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards', /* 新增图表动画 */
+                    },
+                    keyframes: {
+                        scan: {'0%': {transform: 'translateX(-100%)'}, '100%': {transform: 'translateX(100%)'}},
+                        shake: {
+                            '10%, 90%': {transform: 'translate3d(-1px, 0, 0)'},
+                            '20%, 80%': {transform: 'translate3d(2px, 0, 0)'},
+                            '30%, 50%, 70%': {transform: 'translate3d(-4px, 0, 0)'},
+                            '40%, 60%': {transform: 'translate3d(4px, 0, 0)'}
+                        },
+                        growUp: {
+                            '0%': {height: '0%', opacity: '0'},
+                            '100%': {opacity: '1'} /* Height is handled by inline style target */
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #000;
+            color: #e5e5e5;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .mobile-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background-color: #050505;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            border-left: 1px solid #222;
+            border-right: 1px solid #222;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.03);
+        }
+
+        .glass-nav {
+            background: rgba(5, 5, 5, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #fbbf24, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tech-card {
+            background: linear-gradient(145deg, #1a1a1a, #121212);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tech-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        }
+
+        .input-glow:focus {
+            box-shadow: 0 0 15px rgba(217, 119, 6, 0.2);
+            border-color: #d97706;
+        }
+
+        .input-error {
+            border-color: #EF4444 !important;
+            animation: shake 0.5s;
+        }
+
+        .checkmark-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: block;
+            stroke-width: 2;
+            stroke: #fbbf24;
+            box-shadow: inset 0px 0px 0px #fbbf24;
+            animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+        }
+
+        .checkmark-check {
+            transform-origin: 50% 50%;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+        }
+
+        @keyframes stroke {
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes scale {
+            0%, 100% {
+                transform: none;
+            }
+            50% {
+                transform: scale3d(1.1, 1.1, 1);
+            }
+        }
+
+        @keyframes fill {
+            100% {
+                box-shadow: inset 0px 0px 0px 30px #d97706;
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            10%, 30%, 50%, 70%, 90% {
+                transform: translateX(-4px);
+            }
+            20%, 40%, 60%, 80% {
+                transform: translateX(4px);
+            }
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.5, 0, 0, 1), transform 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Bar Chart Animations */
+        .bar-grow {
+            transform-origin: bottom;
+            transform: scaleY(0);
+            transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .fade-in.visible .bar-grow {
+            transform: scaleY(1);
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-container pb-24">
+
+    <!-- Header -->
+    <nav class="fixed top-0 w-full max-w-[480px] z-50 glass-nav px-5 py-4 flex justify-between items-center transition-all duration-300">
+        <div class="flex items-center space-x-2">
+            <div class="w-6 h-6 rounded bg-gradient-to-br from-brand-primary to-yellow-700 flex items-center justify-center text-black text-[10px] font-bold shadow-[0_0_10px_rgba(245,158,11,0.4)]">
+                SEO
+            </div>
+            <span class="font-bold text-white text-sm tracking-wide">AI大平台 <span
+                    class="text-[10px] font-normal text-slate-500 uppercase tracking-widest ml-1">Growth</span></span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 rounded-full bg-brand-success animate-pulse"></div>
+            <span class="text-[10px] text-slate-400 font-mono">TRAFFIC: HIGH</span>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative pt-28 pb-8 px-5 fade-in">
+        <div class="absolute top-20 left-1/2 -translate-x-1/2 w-64 h-64 bg-brand-primary/10 rounded-full blur-[90px] pointer-events-none"></div>
+
+        <div class="relative z-10">
+            <div class="inline-flex items-center gap-2 border border-brand-primary/20 bg-brand-primary/5 px-3 py-1.5 rounded-full text-[10px] text-brand-primary mb-6 backdrop-blur-sm">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-primary opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-primary"></span>
+                    </span>
+                2025 旗舰版 · 商业闭环
+            </div>
+
+            <h1 class="text-[36px] font-black text-white leading-[1.1] mb-4 tracking-tight">
+                全行业<br>AI 商业大平台
+            </h1>
+            <h2 class="text-xl font-medium text-slate-300 mb-6">
+                SEO 霸屏获客 · <span class="gradient-text font-bold">交易变现闭环</span>
+            </h2>
+
+            <p class="text-slate-500 text-xs leading-relaxed mb-8 max-w-[95%] border-l-2 border-brand-primary/30 pl-3">
+                不仅仅是建站，更是构建自动盈利的商业生态。利用 AI
+                矩阵内容霸屏搜索流量，赋能上下游商家入驻，坐收交易佣金。<br>
+                <span class="text-slate-400 mt-1 block">全行业适配 · 交易抽佣 · 广告分发</span>
+            </p>
+
+            <!-- Data Dashboard Card -->
+            <div class="tech-card rounded-2xl p-5 shadow-card-glow group relative overflow-hidden">
+                <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] opacity-20"></div>
+
+                <div class="relative z-10">
+                    <div class="text-center mb-6">
+                        <div class="flex justify-center items-center gap-2 mb-2">
+                            <p class="text-[10px] text-brand-primary font-bold tracking-[0.2em] uppercase">Real-time
+                                GMV</p>
+                            <span class="relative flex h-2 w-2">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-primary opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-primary"></span>
+                                </span>
+                        </div>
+
+                        <div class="flex justify-center items-baseline gap-1 my-2">
+                            <span class="text-xl text-slate-500 font-bold">¥</span>
+                            <span class="text-5xl font-black text-white font-mono tracking-tighter transition-colors duration-150"
+                                  id="live-revenue-counter" style="text-shadow: 0 0 30px rgba(245,158,11,0.5);">1,285,400</span>
+                        </div>
+
+                        <div class="flex justify-center gap-3 text-[10px] text-slate-400">
+                            <div class="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                                <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                今日订单: <span class="text-white font-mono" id="order-counter">8,492</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Trading Commission Card -->
+                        <div class="bg-brand-surface/80 rounded-xl p-3 border border-brand-primary/20 relative overflow-hidden group">
+                            <div class="absolute inset-0 bg-brand-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-6 h-6 rounded-full bg-brand-primary/20 flex items-center justify-center text-brand-primary text-xs">
+                                        <i class="fa-solid fa-percent"></i>
+                                    </div>
+                                    <span class="text-xs text-slate-300 font-bold">交易佣金</span>
+                                </div>
+                                <span class="text-[9px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">+12%</span>
+                            </div>
+                            <div class="text-lg font-bold text-white font-mono" id="commission-counter">¥ 835,510</div>
+                            <div class="w-full bg-brand-dark h-1 rounded-full mt-2 overflow-hidden">
+                                <div class="bg-brand-primary h-full w-[75%] relative">
+                                    <div class="absolute inset-0 bg-white/30 animate-[scan_2s_linear_infinite]"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ad Revenue Card -->
+                        <div class="bg-brand-surface/80 rounded-xl p-3 border border-white/5 relative overflow-hidden group">
+                            <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs">
+                                        <i class="fa-solid fa-rectangle-ad"></i>
+                                    </div>
+                                    <span class="text-xs text-slate-300 font-bold">广告营收</span>
+                                </div>
+                                <span class="text-[9px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">+8%</span>
+                            </div>
+                            <div class="text-lg font-bold text-white font-mono" id="ad-revenue-counter">¥ 449,890</div>
+                            <div class="w-full bg-brand-dark h-1 rounded-full mt-2 overflow-hidden">
+                                <div class="bg-blue-500 h-full w-[45%]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Pain Points -->
+    <section class="px-5 py-4 fade-in">
+        <h2 class="text-lg font-bold text-white mb-4 flex items-center">
+            <i class="fa-solid fa-scale-balanced text-slate-400 mr-2.5 text-sm"></i>
+            商业模式降维打击
+        </h2>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-brand-surface rounded-xl p-4 border border-white/5 opacity-60">
+                <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Traditional</div>
+                <h3 class="text-slate-300 font-bold text-sm mb-3">传统平台模式</h3>
+                <ul class="space-y-2 text-[10px] text-slate-500">
+                    <li class="flex items-center"><i class="fa-solid fa-fire-flame-simple text-brand-danger mr-2"></i>
+                        烧钱买流量
+                    </li>
+                    <li class="flex items-center"><i class="fa-solid fa-xmark text-brand-danger mr-2"></i> 商家入驻难
+                    </li>
+                    <li class="flex items-center"><i class="fa-solid fa-xmark text-brand-danger mr-2"></i> 变现路径单一
+                    </li>
+                </ul>
+            </div>
+            <div class="bg-gradient-to-b from-brand-primary/10 to-brand-surface rounded-xl p-4 border border-brand-primary/30 relative overflow-hidden">
+                <div class="absolute top-0 right-0 px-2 py-0.5 bg-brand-primary text-black text-[8px] font-bold rounded-bl-lg">
+                    PRO
+                </div>
+                <div class="text-[10px] text-brand-primary uppercase tracking-widest mb-2">AI Ecosystem</div>
+                <h3 class="text-white font-bold text-sm mb-3">AI 商业大平台</h3>
+                <ul class="space-y-2 text-[10px] text-slate-300">
+                    <li class="flex items-center"><i class="fa-solid fa-check text-brand-success mr-2"></i> <strong>SEO
+                        自动获客</strong></li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-brand-success mr-2"></i> <strong>全行业生态</strong>
+                    </li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-brand-success mr-2"></i> <strong>多元化盈利</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- New Module: Real Case Study (Chart Style) -->
+    <section class="px-5 py-2 fade-in">
+        <h2 class="text-lg font-bold text-white mb-3 flex items-center">
+            <i class="fa-solid fa-chart-bar text-slate-400 mr-2.5 text-sm"></i>
+            真实案例：降本增效实录
+        </h2>
+
+        <div class="tech-card rounded-2xl p-5 relative overflow-hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <p class="text-[10px] text-brand-primary font-bold uppercase tracking-wider mb-0.5">Case Study</p>
+                    <h3 class="text-white font-bold text-sm">某跨境电商团队</h3>
+                </div>
+                <div class="text-[9px] text-slate-500 border border-white/10 px-2 py-0.5 rounded-full">
+                    30天数据监测
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Chart 1: Cost Reduction -->
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-[10px] text-slate-400">人力成本</span>
+                        <span class="text-[10px] text-brand-success font-bold">↓ 95%</span>
+                    </div>
+                    <div class="h-32 flex items-end justify-around gap-2 bg-white/5 rounded-lg p-2 border border-white/5 relative">
+                        <!-- Traditional Bar -->
+                        <div class="w-8 bg-brand-danger/80 rounded-t-sm relative group bar-grow" style="height: 100%">
+                            <span class="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] text-slate-300">60k</span>
+                            <span class="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-black/50 font-bold">传统</span>
+                        </div>
+                        <!-- AI Bar -->
+                        <div class="w-8 bg-brand-success rounded-t-sm relative group bar-grow" style="height: 5%">
+                            <span class="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] text-white font-bold">3k</span>
+                            <span class="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-black/50 font-bold">AI</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Output Increase -->
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-[10px] text-slate-400">内容产能</span>
+                        <span class="text-[10px] text-brand-primary font-bold">↑ 100倍</span>
+                    </div>
+                    <div class="h-32 flex items-end justify-around gap-2 bg-white/5 rounded-lg p-2 border border-white/5 relative">
+                        <!-- Traditional Bar -->
+                        <div class="w-8 bg-slate-600 rounded-t-sm relative group bar-grow" style="height: 5%">
+                            <span class="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] text-slate-300">50</span>
+                        </div>
+                        <!-- AI Bar -->
+                        <div class="w-8 bg-brand-primary rounded-t-sm relative group bar-grow" style="height: 100%">
+                            <span class="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] text-white font-bold">5k+</span>
+                            <span class="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-black/50 font-bold">AI</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-white/5 text-center">
+                <span class="text-[10px] text-slate-400">净利润增长 <span class="text-brand-primary font-bold text-sm">450%</span></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Engines -->
+    <section class="px-5 py-4 mt-2 fade-in">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white flex items-center">
+                <i class="fa-solid fa-microchip text-slate-400 mr-2.5 text-sm"></i>
+                三大流量获客引擎
+            </h2>
+            <div class="text-[10px] font-mono text-brand-success flex items-center">
+                <i class="fa-solid fa-circle text-[6px] mr-1.5 animate-pulse"></i> ACTIVE
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3">
+            <div class="tech-card rounded-xl p-4 flex items-center gap-4 group">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0 text-blue-400">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-white font-bold text-sm mb-0.5">SEO 语义大脑</h3>
+                    <p class="text-[10px] text-slate-400">
+                        垂类搜索技术赋能，自动布局百万级行业关键词，让平台自带免费流量。</p>
+                </div>
+            </div>
+            <div class="tech-card rounded-xl p-4 flex items-center gap-4 group">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0 text-purple-400">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-white font-bold text-sm mb-0.5">AI 原创素材工厂</h3>
+                    <p class="text-[10px] text-slate-400">
+                        商家一键生成去重海报与文案，轻松通过原创检测，提升全网收录率。</p>
+                </div>
+            </div>
+            <div class="tech-card rounded-xl p-4 flex items-center gap-4 group">
+                <div class="w-10 h-10 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center flex-shrink-0 text-pink-400">
+                    <i class="fa-brands fa-tiktok"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-white font-bold text-sm mb-0.5">短视频流量矩阵</h3>
+                    <p class="text-[10px] text-slate-400">投喂私有素材，批量裂变数字人营销视频，抢占短视频搜索流量。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ecosystem Map -->
+    <section class="px-5 py-4 mt-2 fade-in">
+        <h2 class="text-lg font-bold text-white mb-4 flex items-center">
+            <i class="fa-solid fa-sitemap text-brand-primary mr-2.5 text-sm"></i>
+            全自动流量变现闭环
+        </h2>
+        <div class="tech-card rounded-xl p-6 relative">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-brand-primary/20 rounded-full blur-xl animate-pulse"></div>
+            <div class="relative z-10 flex flex-col items-center gap-6">
+                <div class="flex gap-4">
+                    <div class="bg-brand-surface border border-white/10 px-3 py-2 rounded-lg text-center w-28">
+                        <i class="fa-solid fa-pen-to-square text-slate-400 text-xs mb-1"></i>
+                        <div class="text-[10px] text-white">AI 生产内容</div>
+                    </div>
+                    <div class="bg-brand-surface border border-white/10 px-3 py-2 rounded-lg text-center w-28">
+                        <i class="fa-brands fa-google text-slate-400 text-xs mb-1"></i>
+                        <div class="text-[10px] text-white">全网收录排名</div>
+                    </div>
+                </div>
+
+                <div class="w-full bg-brand-card border border-brand-primary/30 rounded-xl p-3 flex justify-between items-center relative">
+                    <div class="absolute inset-0 bg-brand-primary/5 animate-[pulse_3s_infinite]"></div>
+                    <div class="text-[10px] text-brand-primary font-bold">精准流量池</div>
+                    <div class="text-[9px] text-slate-400">分发 · 撮合 · 转化</div>
+                    <i class="fa-solid fa-filter text-brand-primary animate-bounce"></i>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="bg-brand-surface border border-white/10 px-3 py-2 rounded-lg text-center w-28">
+                        <i class="fa-solid fa-shop text-slate-400 text-xs mb-1"></i>
+                        <div class="text-[10px] text-white">商家付费入驻</div>
+                    </div>
+                    <div class="bg-brand-surface border border-white/10 px-3 py-2 rounded-lg text-center w-28">
+                        <i class="fa-solid fa-hand-holding-dollar text-slate-400 text-xs mb-1"></i>
+                        <div class="text-[10px] text-white">交易佣金/广告</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEO Specs -->
+    <section class="px-5 py-4 fade-in">
+        <h2 class="text-lg font-bold text-white mb-4 flex items-center">
+            <i class="fa-solid fa-server text-slate-400 mr-2.5 text-sm"></i>
+            SEO 友好型架构
+        </h2>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-brand-surface p-3 rounded-lg border border-white/5">
+                <i class="fa-solid fa-code text-brand-primary mb-2"></i>
+                <h4 class="text-white text-xs font-bold">SSR 服务端渲染</h4>
+                <p class="text-[9px] text-slate-500 mt-1">搜索引擎极速抓取</p>
+            </div>
+            <div class="bg-brand-surface p-3 rounded-lg border border-white/5">
+                <i class="fa-solid fa-sitemap text-brand-primary mb-2"></i>
+                <h4 class="text-white text-xs font-bold">自动站群裂变</h4>
+                <p class="text-[9px] text-slate-500 mt-1">覆盖全行业长尾词</p>
+            </div>
+            <div class="bg-brand-surface p-3 rounded-lg border border-white/5">
+                <i class="fa-solid fa-bolt text-brand-primary mb-2"></i>
+                <h4 class="text-white text-xs font-bold">秒开加载速度</h4>
+                <p class="text-[9px] text-slate-500 mt-1">提升用户留存与排名</p>
+            </div>
+            <div class="bg-brand-surface p-3 rounded-lg border border-white/5">
+                <i class="fa-solid fa-mobile-screen text-brand-primary mb-2"></i>
+                <h4 class="text-white text-xs font-bold">移动端适配</h4>
+                <p class="text-[9px] text-slate-500 mt-1">符合主流搜索算法</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Compliance Assets -->
+    <section class="px-5 py-4 border-t border-white/5 mt-2 fade-in">
+        <h2 class="text-lg font-bold text-white mb-4 flex items-center">
+            <i class="fa-solid fa-file-contract text-slate-400 mr-2.5 text-sm"></i>
+            商业合规护航
+        </h2>
+        <div class="bg-brand-card rounded-xl p-1 grid grid-cols-4 gap-px bg-white/5">
+            <div class="bg-brand-surface p-3 text-center rounded-l-lg">
+                <div class="text-[10px] text-slate-400 mb-1">软著备案</div>
+                <i class="fa-solid fa-copyright text-white"></i>
+            </div>
+            <div class="bg-brand-surface p-3 text-center">
+                <div class="text-[10px] text-slate-400 mb-1">公安备案</div>
+                <i class="fa-solid fa-shield-halved text-white"></i>
+            </div>
+            <div class="bg-brand-surface p-3 text-center">
+                <div class="text-[10px] text-slate-400 mb-1">ICP域名备案</div>
+                <i class="fa-solid fa-globe text-white"></i>
+            </div>
+            <div class="bg-brand-surface p-3 text-center rounded-r-lg">
+                <div class="text-[10px] text-slate-400 mb-1">上架应用商店</div>
+                <i class="fa-brands fa-app-store-ios text-white"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Operation Support -->
+    <section class="px-5 py-4 mb-4 fade-in">
+        <h2 class="text-lg font-bold text-white mb-4 flex items-center">
+            <i class="fa-solid fa-hand-holding-heart text-slate-400 mr-2.5 text-sm"></i>
+            尊享运营扶持
+        </h2>
+        <div class="space-y-2">
+            <div class="flex items-start gap-3">
+                <div class="w-1 h-full min-h-[30px] bg-brand-primary rounded-full"></div>
+                <div>
+                    <h4 class="text-white text-xs font-bold">SEO 关键词策略培训</h4>
+                    <p class="text-[10px] text-slate-500">教您如何挖掘高价值行业词，布局流量入口。</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <div class="w-1 h-full min-h-[30px] bg-brand-primary rounded-full"></div>
+                <div>
+                    <h4 class="text-white text-xs font-bold">全平台运营 SOP</h4>
+                    <p class="text-[10px] text-slate-500">提供从内容生产到变现转化的全套操作手册。</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <div class="w-1 h-full min-h-[30px] bg-brand-primary rounded-full"></div>
+                <div>
+                    <h4 class="text-white text-xs font-bold">首年技术运维托管</h4>
+                    <p class="text-[10px] text-slate-500">服务器维护、Bug修复全包，您只管收钱。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing & CTA Form -->
+    <section id="contact-form"
+             class="px-5 py-6 pb-6 mx-2 mt-2 bg-brand-card border border-brand-primary/20 rounded-2xl relative overflow-hidden fade-in">
+        <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="text-center relative z-10">
+            <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-brand-primary mb-2 block">Enterprise Investment</span>
+            <h2 class="text-3xl font-black text-white mb-1">¥100 <span
+                    class="text-lg font-normal text-slate-400">万 起</span></h2>
+            <div class="flex justify-center gap-3 text-[10px] text-slate-400 mb-6">
+                <span><i class="fa-solid fa-check text-brand-primary mr-1"></i>含SEO获客套件</span>
+                <span><i class="fa-solid fa-check text-brand-primary mr-1"></i>源码私有化</span>
+            </div>
+
+            <form id="booking-form" class="space-y-3" onsubmit="handleFormSubmit(event)">
+                <div class="relative">
+                    <input type="text" id="company-name" placeholder="您的称呼" required
+                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-xs text-white input-glow outline-none transition placeholder-slate-600 focus:bg-black">
+                </div>
+                <div class="relative">
+                    <input type="tel" id="contact-phone" placeholder="联系电话 (接收项目资料)" required
+                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-xs text-white input-glow outline-none transition placeholder-slate-600 focus:bg-black">
+                </div>
+                <div class="relative">
+                    <input type="text" id="industry" placeholder="所属行业 (例如: 餐饮, 教培, 电商)" required
+                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-xs text-white input-glow outline-none transition placeholder-slate-600 focus:bg-black">
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-gradient-to-r from-brand-primary to-amber-700 text-black font-bold py-4 rounded-xl shadow-lg shadow-amber-600/20 active:scale-[0.98] transition flex justify-center items-center mt-2 group">
+                    获取详细商业方案
+                    <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </button>
+            </form>
+            <p class="text-[9px] text-slate-600 mt-4 text-center">
+                * 最终价格依据算力配置与定制深度浮动
+            </p>
+        </div>
+    </section>
+
+    <div class="h-10 text-center text-[10px] text-slate-800 pb-24">
+        AI Platform Pro © 2025
+    </div>
+
+    <!-- Sticky Bottom Bar -->
+    <div class="fixed bottom-0 w-full max-w-[480px] bg-black/80 backdrop-blur-xl border-t border-white/10 px-5 py-3 z-40 flex items-center gap-4">
+        <div class="flex flex-col">
+            <span class="text-[9px] text-slate-400 uppercase tracking-wider">Starting At</span>
+            <span class="text-brand-primary font-bold text-lg leading-none">¥100w <span
+                    class="text-xs font-normal text-slate-500">+</span></span>
+        </div>
+        <!-- 场景1：预约演示 -->
+        <button onclick="showModal('demo')"
+                class="flex-1 bg-white text-black font-bold py-3 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95 transition text-sm">
+            预约演示
+        </button>
+    </div>
+
+</div>
+
+<!-- Modal Overlay -->
+<div id="modal-overlay"
+     class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-6 opacity-0 transition-opacity duration-300">
+    <div class="bg-brand-surface border border-white/10 rounded-2xl p-8 w-full max-w-sm text-center transform scale-95 transition-transform duration-300 relative overflow-hidden shadow-2xl"
+         id="modal-content">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-primary to-yellow-500"></div>
+
+        <!-- Loading State -->
+        <div id="modal-loading" class="">
+            <div class="relative w-14 h-14 mx-auto mb-6">
+                <div class="absolute inset-0 border-2 border-white/10 rounded-full"></div>
+                <div class="absolute inset-0 border-2 border-brand-primary rounded-full border-t-transparent animate-spin"></div>
+                <i class="fa-solid fa-paper-plane absolute inset-0 flex items-center justify-center text-xs text-slate-500"></i>
+            </div>
+            <h3 class="text-white font-bold text-lg mb-2">提交中...</h3>
+            <p class="text-slate-400 text-xs" id="loading-text">请稍候</p>
+        </div>
+
+        <!-- Success State -->
+        <div id="modal-success" class="hidden">
+            <div class="w-14 h-14 mx-auto mb-6 relative">
+                <svg class="checkmark-circle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+            </div>
+
+            <!-- 动态内容容器 -->
+            <div id="success-content" class="mb-8"></div>
+
+            <button onclick="closeModal()"
+                    class="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg transition text-sm">
+                返回首页
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Init GMV Ticker
+    function initLiveCounter() {
+        const counterElement = document.getElementById('live-revenue-counter');
+        const commissionCounter = document.getElementById('commission-counter');
+        const adRevenueCounter = document.getElementById('ad-revenue-counter');
+        const orderCounter = document.getElementById('order-counter');
+
+        let currentValue = 1285400;
+        let currentCommission = 835510;
+        let currentAdRevenue = 449890;
+        let currentOrders = 8492;
+
+        const formatMoney = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+        setInterval(() => {
+            const isBurst = Math.random() > 0.8;
+            const increment = isBurst ? Math.floor(Math.random() * 800) + 200 : Math.floor(Math.random() * 150) + 50;
+            const commissionInc = Math.floor(increment * 0.65);
+            const adInc = increment - commissionInc;
+
+            currentValue += increment;
+            currentCommission += commissionInc;
+            currentAdRevenue += adInc;
+
+            counterElement.innerText = formatMoney(currentValue);
+            commissionCounter.innerText = '¥ ' + formatMoney(currentCommission);
+            adRevenueCounter.innerText = '¥ ' + formatMoney(currentAdRevenue);
+
+            counterElement.classList.add('text-brand-primary');
+            setTimeout(() => {
+                counterElement.classList.remove('text-brand-primary');
+            }, 200);
+
+            if (Math.random() > 0.5) {
+                currentOrders += Math.floor(Math.random() * 2) + 1;
+                orderCounter.innerText = formatMoney(currentOrders);
+            }
+        }, 1200);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initLiveCounter();
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {root: null, rootMargin: '0px', threshold: 0.1});
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    });
+
+    function handleFormSubmit(e) {
+        e.preventDefault();
+        showModal('plan');
+    }
+
+    function showModal(type, industry = '') {
+        const overlay = document.getElementById('modal-overlay');
+        const content = document.getElementById('modal-content');
+        const loading = document.getElementById('modal-loading');
+        const success = document.getElementById('modal-success');
+        const loadingText = document.getElementById('loading-text');
+        const successContent = document.getElementById('success-content');
+
+        loading.classList.remove('hidden');
+        success.classList.add('hidden');
+
+        overlay.classList.remove('hidden');
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+        content.classList.add('scale-100');
+
+        if (type === 'demo') {
+            loadingText.innerText = "正在预约...";
+            setTimeout(() => {
+                loading.classList.add('hidden');
+                success.classList.remove('hidden');
+                successContent.innerHTML = `
+                        <h3 class="text-white font-bold text-xl mb-2">预约成功</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            你的商务经理 <span class="text-brand-primary font-mono font-bold text-sm">Tel: 188888888</span><br>
+                            会尽快与您联系，安排演示时间。
+                        </p>
+                    `;
+            }, 1500);
+
+        } else {
+            loadingText.innerText = "提交中...";
+            setTimeout(() => {
+                loading.classList.add('hidden');
+                success.classList.remove('hidden');
+                const randomId = Math.floor(1000 + Math.random() * 9000);
+                successContent.innerHTML = `
+                        <h3 class="text-white font-bold text-xl mb-2">申请已提交</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                            详细商业方案将在 <span class="text-brand-primary font-bold">10分钟内</span><br>
+                            通过短信/邮件发送给您，请注意查收。
+                        </p>
+                        <div class="bg-black rounded-lg p-4 border border-white/5 relative group">
+                            <div class="absolute inset-0 bg-brand-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
+                            <p class="text-[9px] text-slate-500 uppercase tracking-widest mb-1">预约码</p>
+                            <p class="text-brand-primary font-mono text-xl font-bold tracking-wider">VIP-${randomId}</p>
+                        </div>
+                    `;
+            }, 2000);
+        }
+    }
+
+    function closeModal() {
+        const overlay = document.getElementById('modal-overlay');
+        const content = document.getElementById('modal-content');
+        overlay.classList.add('opacity-0');
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            document.getElementById('booking-form').reset();
+        }, 300);
+    }
+</script>
+</body>
+</html>

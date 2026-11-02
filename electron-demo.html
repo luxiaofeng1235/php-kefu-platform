@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Webman 客服系统 - Electron 架构交互图</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .desktop {
+            width: 800px; height: 600px; background: url('https://picsum.photos/id/1/800/600') no-repeat center center; background-size: cover;
+            border: 20px solid #333; border-radius: 10px; position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        .taskbar {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 40px; background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; padding-left: 10px; z-index: 100;
+        }
+        .taskbar-icon {
+            width: 30px; height: 30px; background: #007bff; border-radius: 5px; margin-right: 10px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s;
+        }
+        .taskbar-icon.flash {
+            animation: flashOrange 1s infinite;
+        }
+        @keyframes flashOrange {
+            0% { background-color: #007bff; transform: scale(1); }
+            50% { background-color: #ff9900; transform: scale(1.1); box-shadow: 0 0 15px #ff9900; }
+            100% { background-color: #007bff; transform: scale(1); }
+        }
+
+        /* 模拟 Electron 窗口 */
+        .window {
+            position: absolute; top: 50px; left: 100px; width: 600px; height: 450px; background: white;
+            border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            transform-origin: bottom left;
+            z-index: 10;
+        }
+        .window.minimized {
+            transform: scale(0); opacity: 0; top: 550px; left: 20px; /* 飞入任务栏效果 */
+        }
+        .title-bar {
+            height: 30px; background: #2c3e50; display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
+            border-top-left-radius: 8px; border-top-right-radius: 8px; color: white; font-size: 12px;
+            -webkit-app-region: drag; /* Electron 里的拖拽属性 */
+        }
+        .controls span {
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-left: 5px; cursor: pointer;
+        }
+        .controls .close { background: #ff5f56; }
+        .controls .min { background: #ffbd2e; }
+        .controls .max { background: #27c93f; }
+
+        /* Vue 内容区 */
+        .webview-content {
+            flex: 1; display: flex; overflow: hidden; position: relative;
+        }
+        .sidebar { width: 150px; background: #f5f7fa; border-right: 1px solid #ddd; padding: 10px; }
+        .chat-area { flex: 1; background: white; padding: 15px; display: flex; flex-direction: column; }
+        
+        /* 模拟 Vue 组件 */
+        .user-list-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; }
+        .user-list-item:hover { background: #e6f7ff; }
+        .avatar { width: 30px; height: 30px; background: #ccc; border-radius: 50%; margin-right: 8px; }
+        .msg-bubble { background: #f0f0f0; padding: 8px 12px; border-radius: 15px; margin-bottom: 10px; max-width: 80%; align-self: flex-start; }
+        .msg-bubble.me { background: #95ec69; align-self: flex-end; }
+        .msg-bubble.alarm { background: #ffdddd; border: 1px solid #ff4d4f; color: #d9363e; font-weight: bold; }
+
+        /* 系统通知 */
+        .sys-notification {
+            position: absolute; bottom: 60px; right: -300px; width: 280px; background: #1f1f1f; color: white;
+            padding: 15px; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: right 0.5s ease; border-left: 4px solid #007bff; z-index: 50;
+        }
+        .sys-notification.show { right: 20px; }
+        .sys-notification h4 { margin: 0 0 5px 0; font-size: 14px; }
+        .sys-notification p { margin: 0; font-size: 12px; color: #aaa; }
+
+        /* 交互说明线 */
+        .arrow-line {
+            position: absolute; height: 2px; background: red; z-index: 99; display: none;
+        }
+        .label {
+            position: absolute; background: yellow; border: 1px solid orange; padding: 2px 5px; font-size: 12px; z-index: 100; display: none;
+        }
+
+        .actions {
+            position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px;
+        }
+        button { padding: 8px 15px; cursor: pointer; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button:hover { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+
+    <div class="desktop">
+        <!-- 模拟 Electron 窗口 -->
+        <div class="window" id="appWindow">
+            <div class="title-bar">
+                <span>Webman 客服工作台 (Electron.exe)</span>
+                <div class="controls">
+                    <span class="min" onclick="minimizeWindow()"></span>
+                    <span class="max"></span>
+                    <span class="close" onclick="closeWindow()"></span>
+                </div>
+            </div>
+            <div class="webview-content">
+                <!-- Vue 的地盘 -->
+                <div class="sidebar">
+                    <div class="user-list-item" style="background:#e6f7ff">
+                        <div class="avatar" style="background:#ff9c6e">访</div>
+                        <div>
+                            <div style="font-weight:bold;font-size:12px;">访客 9527</div>
+                            <div style="font-size:10px;color:gray">新消息...</div>
+                        </div>
+                    </div>
+                    <div class="user-list-item">
+                        <div class="avatar">访</div>
+                        <div>访客 8848</div>
+                    </div>
+                </div>
+                <div class="chat-area" id="chatArea">
+                    <div class="msg-bubble">你好，我想咨询一下产品价格。</div>
+                    <div class="msg-bubble me">您好，请问您具体对哪款感兴趣？</div>
+                    <!-- 动态插入新消息 -->
+                </div>
+            </div>
+            <!-- 模拟 Vue 内部的报警 Toast -->
+            <div id="vueToast" style="position:absolute; top: 10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:white; padding:5px 10px; border-radius:4px; font-size:12px; display:none;">
+                Vue层: 收到报警消息
+            </div>
+        </div>
+
+        <!-- 任务栏 -->
+        <div class="taskbar">
+            <div class="taskbar-icon" id="taskbarIcon" onclick="restoreWindow()">Web</div>
+        </div>
+
+        <!-- 系统通知 -->
+        <div class="sys-notification" id="sysNotif">
+            <h4>新消息报警</h4>
+            <p>访客 9527 发来了紧急消息！</p>
+        </div>
+    </div>
+
+    <div class="actions">
+        <h3>模拟交互</h3>
+        <button onclick="receiveNormalMsg()">1. 收到普通消息</button>
+        <button onclick="receiveAlarmMsg()">2. 收到【报警】消息</button>
+        <button onclick="minimizeWindow()">3. 最小化窗口</button>
+    </div>
+
+    <script>
+        const win = document.getElementById('appWindow');
+        const icon = document.getElementById('taskbarIcon');
+        const notif = document.getElementById('sysNotif');
+        const chatArea = document.getElementById('chatArea');
+        const vueToast = document.getElementById('vueToast');
+
+        let isMinimized = false;
+
+        function minimizeWindow() {
+            win.classList.add('minimized');
+            isMinimized = true;
+        }
+
+        function restoreWindow() {
+            win.classList.remove('minimized');
+            isMinimized = false;
+            stopFlash(); // 点击图标停止闪烁
+        }
+        
+        function closeWindow() {
+            minimizeWindow(); // Electron 典型逻辑：点关闭其实是隐藏到托盘
+            alert('逻辑提示：在 Electron 中，点击关闭通常会隐藏到托盘，而不是直接退出程序，保证 WebSocket 不断开。');
+        }
+
+        function startFlash() {
+            icon.classList.add('flash');
+        }
+
+        function stopFlash() {
+            icon.classList.remove('flash');
+        }
+
+        function showVueToast(text) {
+            vueToast.innerText = text;
+            vueToast.style.display = 'block';
+            setTimeout(() => { vueToast.style.display = 'none'; }, 2000);
+        }
+
+        // 模拟 Vue 收到 WebSocket 消息
+        function receiveNormalMsg() {
+            // 1. Vue 渲染界面
+            const msg = document.createElement('div');
+            msg.className = 'msg-bubble';
+            msg.innerText = '请问发货大概要几天？';
+            chatArea.appendChild(msg);
+            showVueToast("Vue层: 渲染新消息气泡");
+
+            // 2. 如果窗口最小化，通知 Electron 闪烁
+            if (isMinimized) {
+                startFlash();
+                // 播放声音 (模拟)
+                console.log('播放提示音...');
+            }
+        }
+
+        function receiveAlarmMsg() {
+            // 1. Vue 渲染界面 (报警样式)
+            const msg = document.createElement('div');
+            msg.className = 'msg-bubble alarm';
+            msg.innerText = '【系统报警】检测到异常访问频率！';
+            chatArea.appendChild(msg);
+            showVueToast("Vue层: 识别为报警类型");
+
+            // 2. Vue 调用 Electron API
+            // window.electronAPI.sendNotification(...)
+            
+            // 3. Electron 响应：弹出系统通知 + 强力闪烁
+            startFlash();
+            notif.classList.add('show');
+            setTimeout(() => { notif.classList.remove('show'); }, 4000);
+            
+            // 如果窗口最小化，甚至可以自动弹出来
+            // if(isMinimized) restoreWindow(); 
+        }
+    </script>
+</body>
+</html>

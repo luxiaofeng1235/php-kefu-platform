@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" style="font-family: 'Segoe UI', sans-serif;">
+  
+  <defs>
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="800" height="800" fill="#f4f4f9"/>
+
+  <!-- ==========================================
+       1. 思维导图部分 (Mind Map Layer)
+       ========================================== -->
+  <g transform="translate(0, 50)">
+    
+    <!-- 连线 (Connections) -->
+    <path d="M 400 80 C 400 80, 400 120, 400 150 
+             M 400 150 C 400 150, 200 150, 200 200
+             M 400 150 C 400 150, 600 150, 600 200
+             M 400 150 L 400 320" 
+          stroke="#999" stroke-width="2" fill="none"/>
+
+    <!-- 根节点 -->
+    <g transform="translate(400, 50)" filter="url(#dropShadow)">
+      <rect x="-100" y="-25" width="200" height="50" rx="25" fill="white" stroke="#333" stroke-width="2"/>
+      <text x="0" y="8" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">交互式 SVG 技术</text>
+    </g>
+
+    <!-- 子节点 1: DOM -->
+    <g transform="translate(200, 225)" filter="url(#dropShadow)">
+      <rect x="-80" y="-25" width="160" height="50" rx="15" fill="white" stroke="#333" stroke-width="1.5"/>
+      <text x="0" y="5" text-anchor="middle" font-size="14" fill="#333">DOM 结构</text>
+      <text x="0" y="40" text-anchor="middle" font-size="10" fill="#888">XML 标签与属性</text>
+    </g>
+
+    <!-- 子节点 2: JS -->
+    <g transform="translate(600, 225)" filter="url(#dropShadow)">
+      <rect x="-80" y="-25" width="160" height="50" rx="15" fill="white" stroke="#333" stroke-width="1.5"/>
+      <text x="0" y="5" text-anchor="middle" font-size="14" fill="#333">JavaScript 嵌入</text>
+      <text x="0" y="40" text-anchor="middle" font-size="10" fill="#888">事件监听与逻辑</text>
+    </g>
+  </g>
+
+  <!-- 中间说明文字 -->
+  <g transform="translate(400, 380)">
+    <text x="0" y="0" text-anchor="middle" font-size="20" font-weight="bold" fill="#333">示例：可玩的 Switch 节点</text>
+    <text x="0" y="25" text-anchor="middle" font-size="12" fill="#777">点击下方 Switch 的按钮试玩 (模拟界面)</text>
+  </g>
+
+  <!-- ==========================================
+       2. Switch 实体部分 (Switch Layer)
+       ========================================== -->
+  <!-- 整体下移以适应思维导图布局 -->
+  <g transform="translate(100, 450)">
+    
+    <!-- 阴影 -->
+    <ellipse cx="300" cy="270" rx="260" ry="15" fill="black" opacity="0.15"/>
+
+    <!-- 主机屏幕部分 -->
+    <g transform="translate(150, 50)">
+      <rect x="0" y="0" width="300" height="200" rx="10" fill="#252525" stroke="#111" stroke-width="2"/>
+      <!-- 屏幕发光区域 -->
+      <rect x="20" y="20" width="260" height="160" fill="black"/>
+      
+      <!-- SCREEN CONTENT (仿照 12.png) -->
+      <g>
+        <!-- 简单的网格线 -->
+        <line x1="20" y1="100" x2="280" y2="100" stroke="#333" stroke-width="1"/>
+        <line x1="150" y1="20" x2="150" y2="180" stroke="#333" stroke-width="1"/>
+        
+        <!-- 文本 -->
+        <text x="150" y="50" text-anchor="middle" fill="#fff" font-family="monospace" font-size="14">SVG OS v1.0</text>
+        <text x="150" y="160" text-anchor="middle" fill="#fff" font-family="monospace" font-size="12" opacity="0.8">READY</text>
+        
+        <!-- 绿色方块 -->
+        <rect x="135" y="85" width="30" height="30" rx="4" fill="#4caf50" stroke="#fff" stroke-width="1"/>
+      </g>
+
+      <!-- 屏幕反光 -->
+      <path d="M 20 180 L 280 20 L 280 180 Z" fill="white" opacity="0.02" pointer-events="none"/>
+    </g>
+
+    <!-- 左手柄 (Joy-Con Left) -->
+    <g transform="translate(80, 50)">
+      <path d="M 0 0 L 70 0 L 70 200 L 0 200 Q -20 200 -20 170 L -20 30 Q -20 0 0 0 Z" fill="#00c3e3"/>
+      <circle cx="35" cy="50" r="18" fill="#333"/>
+      <circle cx="35" cy="50" r="15" fill="#222" stroke="#111" stroke-width="1"/>
+      <!-- D-Pad -->
+      <g fill="#333">
+        <circle cx="35" cy="90" r="6"/>
+        <circle cx="35" cy="130" r="6"/>
+        <circle cx="15" cy="110" r="6"/>
+        <circle cx="55" cy="110" r="6"/>
+      </g>
+      <rect x="45" y="165" width="12" height="12" rx="2" fill="#333"/>
+      <rect x="45" y="20" width="12" height="4" fill="#333"/>
+    </g>
+
+    <!-- 右手柄 (Joy-Con Right) -->
+    <g transform="translate(450, 50)">
+      <path d="M 0 0 L 70 0 Q 90 0 90 30 L 90 170 Q 90 200 70 200 L 0 200 Z" fill="#ff3c28"/>
+      <circle cx="35" cy="120" r="18" fill="#333"/>
+      <circle cx="35" cy="120" r="15" fill="#222" stroke="#111" stroke-width="1"/>
+      <!-- ABXY Buttons with Labels -->
+      <g text-anchor="middle" font-size="8" font-family="Arial" fill="#888">
+        <circle cx="35" cy="50" r="7" fill="#333"/><text x="35" y="53">X</text>
+        <circle cx="35" cy="90" r="7" fill="#333"/><text x="35" y="93">B</text>
+        <circle cx="15" cy="70" r="7" fill="#333"/><text x="15" y="73">Y</text>
+        <circle cx="55" cy="70" r="7" fill="#333"/><text x="55" y="73">A</text>
+      </g>
+      <circle cx="20" cy="170" r="8" fill="#333" stroke="#222" stroke-width="2"/>
+      <path d="M 15 20 L 27 20 M 21 14 L 21 26" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+    </g>
+
+  </g>
+
+</svg>

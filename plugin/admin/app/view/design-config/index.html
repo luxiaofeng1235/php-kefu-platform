@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>首页配置</title>
+    <link rel="stylesheet" href="/app/admin/component/layui/css/layui.css?v=2.8.12"/>
+    <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css"/>
+    <link rel="stylesheet" href="/app/admin/admin/css/reset.css"/>
+</head>
+<body class="pear-container">
+<style>
+    .layui-form-label {
+        width: 120px;
+    }
+
+    .layui-input-block {
+        margin-left: 150px;
+        max-width: 420px;
+    }
+
+    .layui-input-block input {
+        width: 600px;
+    }
+
+    .image-preview {
+        margin: 8px 0 12px;
+        display: none;
+    }
+
+    .image-preview img {
+        width: 160px;
+        height: 160px;
+        object-fit: cover;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        display: block;
+    }
+</style>
+
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" lay-filter="designConfigForm">
+            <input type="hidden" name="id" value="">
+
+            <div class="layui-form-item">
+                <label class="layui-form-label required">PC版图片</label>
+                <div class="layui-input-block">
+                    <input type="text" name="pc_url" style="display:none" required lay-verify="required" value="">
+                    <div class="image-preview" id="pc-url-preview">
+                        <img id="pc-url-preview-img" src="" alt="PC预览">
+                    </div>
+                    <button type="button" class="pear-btn pear-btn-primary pear-btn-sm" id="pc-url-upload"
+                            permission="app.admin.upload.file">
+                        <i class="layui-icon layui-icon-upload"></i>上传文件
+                    </button>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label required">移动端图片</label>
+                <div class="layui-input-block">
+                    <input type="text" name="mobile_url" style="display:none" required lay-verify="required" value="">
+                    <div class="image-preview" id="mobile-url-preview">
+                        <img id="mobile-url-preview-img" src="" alt="移动端预览">
+                    </div>
+                    <button type="button" class="pear-btn pear-btn-primary pear-btn-sm" id="mobile-url-upload"
+                            permission="app.admin.upload.file">
+                        <i class="layui-icon layui-icon-upload"></i>上传文件
+                    </button>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="submit" class="pear-btn pear-btn-primary pear-btn-md" lay-submit
+                            lay-filter="saveConfig">
+                        保存
+                    </button>
+                    <button type="button" class="pear-btn pear-btn-md" id="reset-config">
+                        重置
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
+<script src="/app/admin/component/pear/pear.js"></script>
+<script src="/app/admin/admin/js/permission.js"></script>
+
+<script>
+    const INFO_API = "/app/admin/design-config/info";
+    const INSERT_API = "/app/admin/design-config/insert";
+    const UPDATE_API = "/app/admin/design-config/update";
+
+    layui.use(["form", "popup", "jquery", "layer", "upload"], function () {
+        const form = layui.form;
+        const $ = layui.jquery;
+        const popup = layui.popup;
+        const layer = layui.layer;
+        const upload = layui.upload;
+
+        let currentId = null;
+        let loadedRecord = null;
+
+        const $pcInput = $('input[name="pc_url"]');
+        const $mobileInput = $('input[name="mobile_url"]');
+
+        const pcPreview = {
+            wrapper: $("#pc-url-preview"),
+            img: $("#pc-url-preview-img")
+        };
+        const mobilePreview = {
+            wrapper: $("#mobile-url-preview"),
+            img: $("#mobile-url-preview-img")
+        };
+
+        function refreshPreview(input, preview) {
+            const url = $.trim(input.val() || "");
+            if (url) {
+                preview.img.attr("src", url);
+                preview.wrapper.show();
+            } else {
+                preview.img.attr("src", "");
+                preview.wrapper.hide();
+            }
+        }
+
+        function bindUploader(options) {
+            const {input, preview, uploadBtn} = options;
+            let uploadLoadingIndex = null;
+
+            upload.render({
+                elem: uploadBtn,
+                url: "/app/admin/upload/formFile",
+                accept: "images",
+                exts: "jpg|jpeg|png|gif|webp",
+                field: "__file__",
+                before: function () {
+                    uploadLoadingIndex = layer.load();
+                },
+                done: function (res) {
+                    if (uploadLoadingIndex !== null) {
+                        layer.close(uploadLoadingIndex);
+                        uploadLoadingIndex = null;
+                    }
+                    if (res.code) {
+                        return popup.failure(res.msg || "上传失败");
+                    }
+                    input.val(res.data.url);
+                    refreshPreview(input, preview);
+                },
+                error: function () {
+                    if (uploadLoadingIndex !== null) {
+                        layer.close(uploadLoadingIndex);
+                        uploadLoadingIndex = null;
+                    }
+                    popup.failure("上传失败，请重试");
+                }
+            });
+
+            return function () {
+                refreshPreview(input, preview);
+            };
+        }
+
+        const refreshPcPreview = bindUploader({
+            input: $pcInput,
+            preview: pcPreview,
+            uploadBtn: "#pc-url-upload"
+        });
+        const refreshMobilePreview = bindUploader({
+            input: $mobileInput,
+            preview: mobilePreview,
+            uploadBtn: "#mobile-url-upload"
+        });
+
+        function refreshAllPreviews() {
+            refreshPcPreview();
+            refreshMobilePreview();
+        }
+
+        function assignForm(data, updateSnapshot = true) {
+            const values = data ? {...data} : {id: "", pc_url: "", mobile_url: ""};
+            currentId = values.id ? Number(values.id) : null;
+            if (updateSnapshot) {
+                loadedRecord = values.id ? {...values} : null;
+            }
+            form.val("designConfigForm", {
+                id: values.id || "",
+                pc_url: values.pc_url || "",
+                mobile_url: values.mobile_url || ""
+            });
+            refreshAllPreviews();
+        }
+
+        function loadData() {
+            $.ajax({
+                url: INFO_API,
+                dataType: "json",
+                success(res) {
+                    if (res.code) {
+                        return popup.failure(res.msg || "加载失败");
+                    }
+                    const record = res.data && Object.keys(res.data).length ? res.data : null;
+                    assignForm(record, true);
+                },
+                error() {
+                    popup.failure("请求失败，请稍后重试");
+                }
+            });
+        }
+
+        $("#reset-config").on("click", function () {
+            assignForm(loadedRecord, false);
+        });
+
+        form.on("submit(saveConfig)", function (data) {
+            const submitData = {...data.field};
+            if (!submitData.pc_url) {
+                popup.failure("请上传PC图片");
+                return false;
+            }
+            if (!submitData.mobile_url) {
+                popup.failure("请上传移动图片");
+                return false;
+            }
+
+            const loading = layer.load();
+            let requestUrl = INSERT_API;
+
+            if (currentId) {
+                submitData.id = currentId;
+                requestUrl = UPDATE_API;
+            } else {
+                delete submitData.id;
+            }
+
+            $.ajax({
+                url: requestUrl,
+                type: "POST",
+                dataType: "json",
+                data: submitData,
+                success(res) {
+                    layer.close(loading);
+                    if (res.code) {
+                        return popup.failure(res.msg || "操作失败");
+                    }
+                    popup.success("保存成功");
+                    if (!currentId && res.data && res.data.id) {
+                        currentId = Number(res.data.id);
+                    }
+                    loadData();
+                },
+                error() {
+                    layer.close(loading);
+                    popup.failure("请求失败，请稍后重试");
+                }
+            });
+            return false;
+        });
+
+        loadData();
+    });
+</script>
+</body>
+</html>

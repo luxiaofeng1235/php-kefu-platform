@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>冒泡排序小鸭子</title>
+<style>
+  :root { --duration: 300ms; }
+  body {
+    font-family: "SF Pro Display", "Segoe UI", Arial, sans-serif;
+    background: radial-gradient(circle at 20% 20%, #e3f2ff, #f6f8fb 35%), radial-gradient(circle at 80% 0%, #ffe7f2, #f6f8fb 45%);
+    margin:0; padding:24px;
+    color:#1f2937;
+  }
+  h1 { margin:0 0 12px; font-weight:700; }
+  .controls { display:flex; gap:8px; margin-bottom:10px; align-items:center; flex-wrap:wrap; }
+  button { padding:10px 16px; border:none; border-radius:10px; background:linear-gradient(135deg,#4c8bf5,#6aa8ff); color:#fff; cursor:pointer; box-shadow:0 10px 20px rgba(76,139,245,0.22); }
+  button:disabled { background:#b8c6e3; box-shadow:none; cursor:not-allowed; }
+  .slider { display:flex; align-items:center; gap:6px; font-size:14px; }
+  .glass {
+    background:rgba(255,255,255,0.74);
+    border-radius:16px;
+    padding:16px;
+    box-shadow:0 25px 50px rgba(31,41,55,0.12);
+    backdrop-filter: blur(8px);
+  }
+  .status {
+    display:flex; gap:16px; font-size:14px; color:#4b5563; margin-bottom:10px; flex-wrap:wrap;
+  }
+  .pill {
+    background:rgba(76,139,245,0.12);
+    color:#245ec7;
+    padding:6px 12px;
+    border-radius:999px;
+    font-weight:600;
+  }
+  .pond {
+    position:relative; height:240px; padding:24px;
+    background:linear-gradient(180deg, #dff1ff 0%, #e8f4ff 60%, #d9ecff 100%);
+    border-radius:16px; overflow:hidden;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+  .pond::after {
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(100% 60% at 50% 100%, rgba(255,255,255,0.35), rgba(255,255,255,0));
+    pointer-events:none;
+  }
+  .duck { position:absolute; bottom:50px; width:68px; height:68px; border-radius:18px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#ffd54f,#ffb300); color:#2d2d2d;
+    transition: left var(--duration) ease, transform var(--duration) ease, background var(--duration) ease, box-shadow var(--duration) ease;
+    box-shadow:0 12px 18px rgba(0,0,0,0.12);
+  }
+  .duck .icon { font-size:30px; transform: scaleX(-1); line-height:1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12)); }
+  .duck .label { position:absolute; bottom:-26px; width:100%; text-align:center; font-size:12px; color:#374151; font-weight:600; }
+  .duck.active { background:linear-gradient(135deg,#ff9f7f,#ff6b4a); transform:translateY(-8px) scale(1.06); box-shadow:0 18px 30px rgba(255,107,74,0.22); }
+  .duck.compare { animation: bob 0.6s ease-in-out infinite alternate; }
+  .duck.min { box-shadow:0 18px 30px rgba(255,215,0,0.32), 0 0 0 3px rgba(255,215,0,0.5); }
+  .duck.sorted { background:linear-gradient(135deg,#7dd973,#4caf50); box-shadow:0 18px 30px rgba(76,175,80,0.25); }
+  @keyframes bob { from { transform:translateY(-4px); } to { transform:translateY(4px); } }
+</style>
+</head>
+<body>
+<h1>冒泡排序 · 小鸭子漂移版</h1>
+<div class="glass">
+  <div class="controls">
+    <button id="startBtn">开始排序</button>
+    <button id="resetBtn">重新生成</button>
+    <div class="slider">
+      速度
+      <input id="speed" type="range" min="50" max="800" step="50" value="300">
+      <span id="speedVal">300ms</span>
+    </div>
+  </div>
+  <div class="status">
+    <div class="pill" id="statusText">状态：待开始</div>
+    <div class="pill" id="compareText">比较次数：0</div>
+    <div class="pill" id="swapText">交换次数：0</div>
+  </div>
+</div>
+<div id="pond" class="pond"></div>
+
+<script>
+(() => {
+  const pondEl = document.getElementById('pond');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const speedInput = document.getElementById('speed');
+  const speedVal = document.getElementById('speedVal');
+  const statusText = document.getElementById('statusText');
+  const compareText = document.getElementById('compareText');
+  const swapText = document.getElementById('swapText');
+
+  let values = [];
+  let ducks = [];
+  let running = false;
+  let compareCount = 0;
+  let swapCount = 0;
+
+  function setDuration(ms) {
+    document.documentElement.style.setProperty('--duration', ms + 'ms');
+    speedVal.textContent = ms + 'ms';
+  }
+
+  function genValues(n = 12) {
+    values = Array.from({ length: n }, () => Math.floor(Math.random() * 90) + 10);
+  }
+
+  function render() {
+    pondEl.innerHTML = '';
+    ducks = [];
+    // 使用“黄金角度”在色相环上均匀打散颜色，让相邻小鸭子的颜色差异更明显
+    const gradients = Array.from({ length: values.length }, (_, i) => {
+      const hue = Math.round((i * 137.508) % 360); // golden angle 约 137.5°
+      const base = `hsl(${hue}, 82%, 52%)`;
+      const highlight = `hsl(${hue}, 88%, 70%)`;
+      return `linear-gradient(135deg, ${base}, ${highlight})`;
+    });
+    values.forEach((v, idx) => {
+      const duck = document.createElement('div');
+      duck.className = 'duck';
+      duck.style.left = `${idx * 62}px`;
+      duck.style.background = gradients[idx];
+      duck.innerHTML = '<div class="icon">🦆</div><div class="label">' + v + '</div>';
+      pondEl.appendChild(duck);
+      ducks.push(duck);
+    });
+  }
+
+  function updatePositions(activeA = -1, activeB = -1, comparing = false, minIndex = -1, sortedBoundary = -1) {
+    ducks.forEach((duck, idx) => {
+      duck.style.left = `${idx * 62}px`;
+      const isActive = idx === activeA || idx === activeB;
+      duck.classList.toggle('active', isActive);
+      duck.classList.toggle('compare', comparing && isActive);
+      duck.classList.toggle('min', idx === minIndex);
+      duck.classList.toggle('sorted', sortedBoundary >= 0 && idx <= sortedBoundary);
+    });
+  }
+
+  async function swap(i, j) {
+    [values[i], values[j]] = [values[j], values[i]];
+    [ducks[i], ducks[j]] = [ducks[j], ducks[i]];
+    ducks[i].querySelector('.label').textContent = values[i];
+    ducks[j].querySelector('.label').textContent = values[j];
+    swapCount++;
+    swapText.textContent = `交换次数：${swapCount}`;
+    updatePositions();
+  }
+
+  function sleep(ms) {
+    return new Promise(res => setTimeout(res, ms));
+  }
+
+  async function selectionSort() {
+    running = true;
+    startBtn.disabled = true;
+    resetBtn.disabled = true;
+    statusText.textContent = '状态：排序中...';
+    compareCount = 0;
+    swapCount = 0;
+    compareText.textContent = '比较次数：0';
+    swapText.textContent = '交换次数：0';
+    const n = values.length;
+    for (let i = 0; i < n - 1; i++) {
+      let minIndex = i;
+      updatePositions(-1, -1, false, minIndex, i - 1);
+      for (let j = i + 1; j < n; j++) {
+        if (!running) return;
+        updatePositions(j, minIndex, true, minIndex, i - 1);
+        compareCount++;
+        compareText.textContent = `比较次数：${compareCount}`;
+        await sleep(speedInput.value);
+        if (values[j] < values[minIndex]) {
+          minIndex = j;
+          updatePositions(j, minIndex, true, minIndex, i - 1);
+        }
+      }
+      if (minIndex !== i) {
+        await swap(i, minIndex);
+        await sleep(speedInput.value);
+      }
+      updatePositions(-1, -1, false, -1, i);
+    }
+    updatePositions(-1, -1, false, -1, n - 1);
+    statusText.textContent = '状态：完成 ✅';
+    running = false;
+    startBtn.disabled = false;
+    resetBtn.disabled = false;
+  }
+
+  function reset() {
+    running = false;
+    startBtn.disabled = false;
+    resetBtn.disabled = false;
+    genValues();
+    render();
+    updatePositions(-1, -1, false);
+    ducks.forEach(d => d.classList.remove('sorted'));
+    statusText.textContent = '状态：待开始';
+    compareText.textContent = '比较次数：0';
+    swapText.textContent = '交换次数：0';
+  }
+
+  startBtn.addEventListener('click', () => { if (!running) selectionSort(); });
+  resetBtn.addEventListener('click', () => { if (!running) reset(); });
+  speedInput.addEventListener('input', e => setDuration(e.target.value));
+
+  setDuration(speedInput.value);
+  reset();
+})();
+</script>
+</body>
+</html>

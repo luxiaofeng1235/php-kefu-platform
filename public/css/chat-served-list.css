@@ -1,0 +1,225 @@
+/**
+ * 多访客接入功能 - 已接入列表样式
+ * 用于客服端右侧"已接入列表"
+ */
+
+/* 右侧已接入列表 */
+#servedSidebar {
+    width: 340px;
+    background-color: #f8f9fa;
+    border-left: 1px solid #dee2e6;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+#servedSidebar h3 {
+    padding: 12px 15px;
+    margin: 0;
+    background-color: #e9ecef;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.badge {
+    background-color: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: normal;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* 已接入访客卡片 */
+.served-visitor-item {
+    padding: 12px;
+    margin: 10px 10px 12px 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.served-visitor-item:hover {
+    background-color: #f0f7ff;
+    border-color: #007bff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.served-visitor-item.active {
+    background-color: #e7f3ff;
+    border-color: #007bff;
+    border-width: 2px;
+}
+
+/* 闲置警告闪烁效果 */
+.served-visitor-item.warning-blink {
+    border-color: #dc3545;
+    background-color: #fff5f5;
+    animation: warning-pulse 1.5s infinite;
+}
+
+@keyframes warning-pulse {
+    0%, 100% {
+        background-color: #fff5f5;
+        border-color: #dc3545;
+    }
+    50% {
+        background-color: #ffe0e0;
+        border-color: #ff6b6b;
+    }
+}
+
+/* 访客卡片头部 */
+.served-visitor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.visitor-token {
+    font-size: 14px;
+    font-weight: 600;
+    color: #212529;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: block;
+}
+
+.visitor-token-hint {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    margin-top: 4px;
+}
+
+.visitor-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+    background-color: #28a745;
+    color: white;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* 未读消息红点样式 */
+.unread-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #dc3545;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    padding: 0 5px;
+    margin-left: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.visitor-btn-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+/* 访客信息行 */
+.served-visitor-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.idle-time {
+    font-weight: 500;
+    color: #495057;
+}
+
+.warning-blink .idle-time {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.message-count {
+    color: #6c757d;
+}
+
+/* 操作按钮 */
+.served-visitor-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.served-visitor-actions button {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.served-visitor-actions button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-extend {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-extend:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-hangup {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-hangup:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.served-visitor-actions button span {
+    font-size: 14px;
+}
+
+/* 响应式设计 */
+@media (max-width: 992px) {
+    #servedSidebar {
+        display: none !important;
+    }
+}

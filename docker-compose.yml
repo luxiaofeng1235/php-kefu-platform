@@ -1,0 +1,32 @@
+services:
+  web:
+    build: .
+    container_name: webman-api
+    ports:
+      - "8787:8787"
+      - "8585:8585"
+      - "7272:7272"
+      - "8000:8000"
+    volumes:
+      - ./:/opt/www
+      - ./runtime:/opt/www/runtime
+    working_dir: /opt/www
+    command: ["php", "start.php", "start"]
+    environment:
+      - COMPOSER_ALLOW_SUPERUSER=1
+      - COMPOSER_HOME=/tmp/composer
+    networks:
+      - webman
+
+  redis:
+    container_name: webman-redis
+    image: redis:7.4-alpine
+    ports:
+      - 16379:6379
+    networks:
+      - webman
+
+
+networks:
+    webman:
+      driver: bridge
