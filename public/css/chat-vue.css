@@ -303,9 +303,23 @@
 }
 
 .visitor-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+    min-width: 0;
+    text-align: left;
+}
+
+.visitor-meta-item {
+    min-width: 0;
+    display: block;
+    color: #909399;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
 }
 
 .message-preview {

@@ -59,12 +59,12 @@ window.VisitorCard = {
 
             <!-- 访客元信息 -->
             <div class="visitor-meta">
-                <el-text size="small" type="info">
+                <span class="visitor-meta-item" :title="'访客ID: ' + visitor.token">
                     🆔 {{ visitor.token }}
-                </el-text>
-                <el-text size="small" type="info">
+                </span>
+                <span class="visitor-meta-item" :title="'IP: ' + (visitor.ip || '未知') + (visitor.location ? ' (' + visitor.location + ')' : '')">
                     🌐 IP: {{ visitor.ip || '未知' }}{{ visitor.location ? ' (' + visitor.location + ')' : '' }}
-                </el-text>
+                </span>
             </div>
 
             <!-- 访问和上线时间（同一行） -->
