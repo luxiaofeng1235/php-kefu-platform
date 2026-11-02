@@ -17,7 +17,7 @@ $db = new mysql_class();
 $db_master = $db->db_master;
 $sql = "select id,visitor_token,ip from wa_ws_visitor_session where location is null or  location =''";
 $info = $db->fetchAll($sql, $db_master);
-if (!$info) {
+if (!$info || empty($info)) {
     $info = [];
 }
 echo "total Ip visitor :" . count($info) . PHP_EOL;
